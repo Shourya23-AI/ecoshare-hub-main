@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>EcoShare Hub — My Impact</title>
+<link rel="stylesheet" href="css/style.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="home.html" class="brand"><span class="brand-mark">E</span> EcoShare Hub</a>
+    <div class="nav-links">
+      <a href="home.html" class="nav-link">Browse</a>
+      <a href="impact.html" class="nav-link active">My Impact</a>
+      <a href="leaderboard.html" class="nav-link">Leaderboard</a>
+      <a href="chat.html" class="nav-link">Messages</a>
+    </div>
+    <!-- nav-actions wrapped with opacity 0 initially to prevent any loading flash -->
+    <div class="nav-actions" style="display: flex; align-items: center; gap: 8px; opacity: 0; transition: opacity 0.2s ease;" id="nav-actions-wrapper">
+      <span id="nav-tier-pill" class="badge badge-gold" style="display:none;"></span>
+      <div id="nav-profile-slot" style="display:none;"></div>
+      <button id="nav-post-btn" class="btn btn-primary btn-sm">+ Post item</button>
+      <button id="logout-btn" class="btn btn-outline btn-sm" style="display:none;">Log out</button>
+    </div>
+  </div>
+</nav>
+
+<script>
+  // Immediately reveal nav actions once DOM is parsed to prevent layout flash
+  document.addEventListener("DOMContentLoaded", () => {
+    const wrapper = document.getElementById('nav-actions-wrapper');
+    if (wrapper) wrapper.style.opacity = '1';
+  });
+</script>
+
+<header class="container hero" style="padding-top: 40px; padding-bottom: 30px;">
+  <span class="eyebrow">PERSONAL SUSTAINABILITY TRACKER</span>
+  <h1 style="font-size: 38px; margin: 8px 0 12px 0;">Your Environmental Impact</h1>
+  <p style="color: #4b5563; font-size: 15px; max-width: 600px; margin: 0;">
+    See the tangible difference you've made in our community by sharing surplus goods and reducing waste.
+  </p>
+</header>
+
+<section class="container" style="padding-bottom: 80px;">
+  <!-- Impact Stats Overview Grid -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 32px;">
+    <div style="background: #ffffff; padding: 24px; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+      <p style="font-size: 13px; color: #6b7280; margin: 0 0 8px 0; font-weight: 500;">Total Items Shared</p>
+      <h3 id="impact-items-count" style="font-size: 32px; font-weight: 700; color: #166534; margin: 0;">--</h3>
+    </div>
+    
+    <div style="background: #ffffff; padding: 24px; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+      <p style="font-size: 13px; color: #6b7280; margin: 0 0 8px 0; font-weight: 500;">Waste Diverted</p>
+      <h3 id="impact-waste-count" style="font-size: 32px; font-weight: 700; color: #166534; margin: 0;">--</h3>
+    </div>
+
+    <div style="background: #ffffff; padding: 24px; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+      <p style="font-size: 13px; color: #6b7280; margin: 0 0 8px 0; font-weight: 500;">Community Rank</p>
+      <h3 id="impact-rank" style="font-size: 32px; font-weight: 700; color: #166534; margin: 0;">--</h3>
+    </div>
+
+    <div style="background: #ffffff; padding: 24px; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+      <p style="font-size: 13px; color: #6b7280; margin: 0 0 8px 0; font-weight: 500;">Helper Tier</p>
+      <h3 id="impact-tier" style="font-size: 24px; font-weight: 700; color: #166534; margin: 0;">--</h3>
+    </div>
+  </div>
+
+  <!-- Tier progress toward the next medal -->
+  <div style="background: #ffffff; border-radius: 12px; border: 1px solid #e5e7eb; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 24px;">
+    <div class="panel-title-row" style="display:flex; justify-content: space-between; align-items: baseline;">
+      <h3 style="font-size: 18px; font-weight: 600; color: #111827; margin: 0;">Progress to next medal</h3>
+      <span id="impact-progress-label" style="font-size: 12px; color: #6b7280;"></span>
+    </div>
+    <div class="progress-track"><div id="impact-progress-fill" class="progress-fill" style="width:0%;"></div></div>
+    <div class="progress-labels">
+      <span id="impact-progress-current">0 donations</span>
+      <span id="impact-progress-next"></span>
+    </div>
+  </div>
+
+  <!-- Certificate banner for the highest unlocked tier -->
+  <div id="impact-cert-banner" class="cert-banner" style="display:none; margin-bottom: 24px;">
+    <div>
+      <div class="eyebrow2">CERTIFICATE UNLOCKED</div>
+      <h3 id="impact-cert-title">—</h3>
+      <p id="impact-cert-desc"></p>
+    </div>
+    <button id="impact-cert-view-btn" class="btn btn-primary">View certificate</button>
+  </div>
+
+  <!-- All 5 medal tiers, current one highlighted -->
+  <div style="background: #ffffff; border-radius: 12px; border: 1px solid #e5e7eb; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 24px;">
+    <h3 style="font-size: 18px; font-weight: 600; color: #111827; margin: 0 0 16px 0;">Donation medals</h3>
+    <div id="impact-tier-grid" class="tier-grid" style="grid-template-columns: repeat(5, 1fr);"></div>
+  </div>
+
+  <!-- Detailed Activity Card -->
+  <div style="background: #ffffff; border-radius: 12px; border: 1px solid #e5e7eb; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+    <h3 style="font-size: 18px; font-weight: 600; color: #111827; margin: 0 0 16px 0;">Your Contribution History</h3>
+    <div id="impact-history-list" style="color: #4b5563; font-size: 14px;">
+      Loading your sharing history...
+    </div>
+  </div>
+</section>
+
+<!-- Post/Edit Item Modal Overlay -->
+<div id="post-modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; padding: 16px;">
+  <div style="background: #ffffff; width: 100%; max-width: 500px; border-radius: 12px; padding: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); position: relative;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h3 style="margin: 0; font-size: 20px; color: #111;">Post an item</h3>
+      <button id="post-modal-close" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #6b7280;">&times;</button>
+    </div>
+    
+    <form id="post-item-form" style="display: flex; flex-direction: column; gap: 12px;">
+      <div>
+        <label style="display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 4px;">Item Title</label>
+        <input type="text" name="title" required placeholder="e.g. Wooden Dining Chair" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; box-sizing: border-box;" />
+      </div>
+
+      <div>
+        <label style="display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 4px;">Photo (optional)</label>
+        <div style="display:flex; align-items:center; gap:12px; background:#f0fdf4; border:1px dashed #bbf7d0; border-radius:8px; padding:10px 12px;">
+          <img id="post-photo-preview" src="" alt="" style="display:none; width:52px; height:52px; object-fit:cover; border-radius:6px; flex-shrink:0;" />
+          <label class="btn btn-outline btn-sm" style="cursor:pointer; white-space:nowrap;">
+            Choose photo
+            <input type="file" id="post-photo-input" name="photo" accept="image/*" style="display:none;" />
+          </label>
+          <span id="post-photo-filename" style="font-size:12px; color:#6b7280;">No file selected — items with photos get claimed faster</span>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <div>
+          <label style="display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 4px;">Category</label>
+          <select name="category" required style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; background: #fff; box-sizing: border-box;">
+            <option value="Food">Food</option>
+            <option value="Furniture">Furniture</option>
+            <option value="Electronics">Electronics</option>
+            <option value="Books">Books</option>
+            <option value="Clothing">Clothing</option>
+            <option value="Plants">Plants</option>
+            <option value="Misc">Misc</option>
+          </select>
+        </div>
+        <div>
+          <label style="display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 4px;">Condition</label>
+          <select name="condition" required style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; background: #fff; box-sizing: border-box;">
+            <option value="">Select condition</option>
+            <option value="New">New</option>
+            <option value="Like New">Like New</option>
+            <option value="Good">Good</option>
+            <option value="Fair">Fair</option>
+            <option value="Needs Repair">Needs Repair</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <div>
+          <label style="display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 4px;">Quantity</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="number" name="quantityAmount" min="1" step="1" required placeholder="e.g. 3" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; box-sizing: border-box;" />
+            <select name="quantityUnit" required style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; background: #fff; box-sizing: border-box;">
+              <option value="units">units</option>
+              <option value="kg">kg</option>
+              <option value="g">g</option>
+              <option value="pieces">pieces</option>
+              <option value="packs">packs</option>
+              <option value="liters">liters</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label style="display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 4px;">Posting Limit</label>
+          <div id="posting-limit-note" style="width: 100%; padding: 10px; border: 1px dashed #d1d5db; border-radius: 6px; font-size: 13px; color: #6b7280; background: #f9fafb; box-sizing: border-box;">
+            Pick a category to see the limit
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <label style="display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 4px;">Pickup Location</label>
+        <input type="text" name="pickupLocation" required placeholder="e.g. Downtown / Building B" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; box-sizing: border-box;" />
+      </div>
+
+      <div>
+        <label style="display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 4px;">Description</label>
+        <textarea name="description" rows="3" placeholder="Provide details about the item..." style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; box-sizing: border-box; resize: vertical;"></textarea>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="margin-top: 8px;">Post listing</button>
+    </form>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">
+    <span class="brand"><span class="brand-mark">E</span> EcoShare Hub</span>
+    <span>© 2026 EcoShare Hub · Reducing waste, building community.</span>
+    <div class="footer-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Contact</a></div>
+  </div>
+</footer>
+
+<script type="module">
+  import { guardPage } from "./js/auth.js";
+  guardPage();
+</script>
+<script type="module" src="js/main.js"></script>
+<script type="module" src="js/impact.js"></script>
+</body>
+</html>

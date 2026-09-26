@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Admin Command Center — EcoShare</title>
+<!-- This standalone console has been folded into admin.html, which now
+     has the full set of admin powers (listings + users + certs + bans).
+     Forward here immediately so old links/bookmarks land in one place. -->
+<script>window.location.replace('admin.html');</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --adm-bg: #f8fafc;
+    --adm-surface: #ffffff;
+    --adm-surface-hover: #f0fdf4;
+    --adm-border: #e2e8f0;
+    --adm-border-focus: #16a34a;
+    --adm-text: #0f172a;
+    --adm-muted: #64748b;
+    --adm-accent: #16a34a;
+    --adm-accent-hover: #15803d;
+    --adm-accent-glow: rgba(22, 163, 74, 0.08);
+    --adm-danger: #ef4444;
+    --adm-danger-bg: #fef2f2;
+  }
+
+  body.admin-root {
+    background-color: var(--adm-bg);
+    color: var(--adm-text);
+    font-family: 'Inter', sans-serif;
+    margin: 0;
+    display: flex;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .admin-sidebar {
+    width: 280px;
+    background: var(--adm-surface);
+    border-right: 1px solid var(--adm-border);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 32px 20px;
+    box-sizing: border-box;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+  }
+  .sidebar-brand {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--adm-text);
+    margin-bottom: 36px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-left: 8px;
+  }
+  .sidebar-brand span {
+    background: #dcfce7;
+    color: var(--adm-accent);
+    padding: 6px;
+    border-radius: 8px;
+    display: inline-flex;
+  }
+  .sidebar-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    flex-grow: 1;
+  }
+  .sidebar-link {
+    background: transparent;
+    border: none;
+    color: var(--adm-muted);
+    text-align: left;
+    padding: 12px 14px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+    width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .sidebar-link:hover {
+    background: var(--adm-surface-hover);
+    color: var(--adm-accent);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 0 rgba(15, 23, 42, 0.06), 0 4px 8px rgba(15, 23, 42, 0.06);
+  }
+  .sidebar-link:active { transform: translateY(1px); box-shadow: none; }
+  .sidebar-link.active {
+    background: #f0fdf4;
+    color: var(--adm-accent);
+    font-weight: 600;
+    box-shadow: inset 3px 0 0 var(--adm-accent), 0 2px 0 rgba(21, 128, 61, 0.1), 0 4px 8px rgba(21, 128, 61, 0.1);
+  }
+
+  .admin-main {
+    flex-grow: 1;
+    padding: 40px 48px;
+    overflow-y: auto;
+    box-sizing: border-box;
+    max-width: 1400px;
+  }
+  .admin-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+    border-bottom: 1px solid var(--adm-border);
+    padding-bottom: 24px;
+  }
+  .admin-topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--adm-text);
+  }
+
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px;
+    margin-bottom: 32px;
+  }
+  .metric-card {
+    background: var(--adm-surface);
+    border: 1px solid var(--adm-border);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.01);
+  }
+  .metric-card h4 {
+    margin: 0 0 10px 0;
+    color: var(--adm-muted);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .metric-card .stat {
+    font-size: 2.25rem;
+    font-weight: 700;
+    color: var(--adm-text);
+    margin: 0;
+  }
+
+  .admin-panel-card {
+    background: var(--adm-surface);
+    border: 1px solid var(--adm-border);
+    border-radius: 12px;
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+  .panel-header-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .admin-search-input {
+    background: var(--adm-surface);
+    border: 1px solid var(--adm-border);
+    color: var(--adm-text);
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    width: 280px;
+    outline: none;
+  }
+  .admin-search-input:focus {
+    border-color: var(--adm-border-focus);
+    box-shadow: 0 0 0 3px var(--adm-accent-glow);
+  }
+
+  .admin-table-wrapper {
+    border: 1px solid var(--adm-border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+  }
+  .admin-table th {
+    background: #f8fafc;
+    color: var(--adm-muted);
+    padding: 12px 16px;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    font-weight: 600;
+    border-bottom: 1px solid var(--adm-border);
+  }
+  .admin-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--adm-border);
+    font-size: 0.875rem;
+    color: var(--adm-text);
+  }
+  .admin-table tr:hover td {
+    background: var(--adm-surface-hover);
+  }
+
+  .btn-action {
+    background: var(--adm-accent);
+    color: #ffffff;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-weight: 500;
+    font-size: 0.8rem;
+    cursor: pointer;
+    white-space: nowrap;
+    box-shadow: 0 3px 0 rgba(0, 0, 0, 0.18), 0 5px 10px rgba(0, 0, 0, 0.12);
+    transition: background 0.15s, transform 0.12s ease, box-shadow 0.12s ease;
+  }
+  .btn-action:hover { background: var(--adm-accent-hover); transform: translateY(-1px); }
+  .btn-action:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0, 0, 0, 0.18), 0 2px 5px rgba(0, 0, 0, 0.1); }
+  .btn-danger {
+    background: #fff;
+    color: var(--adm-danger);
+    border: 1px solid #fecaca;
+    box-shadow: 0 3px 0 #fecaca, 0 5px 10px rgba(153, 27, 27, 0.1);
+  }
+  .btn-danger:hover { background: var(--adm-danger-bg); transform: translateY(-1px); }
+  .btn-danger:active { transform: translateY(2px); box-shadow: 0 1px 0 #fecaca, 0 2px 5px rgba(153, 27, 27, 0.08); }
+  .badge {
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    display: inline-flex;
+  }
+  .badge-admin { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+  .badge-member { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+</style>
+</head>
+<body class="admin-root">
+
+  <aside class="admin-sidebar">
+    <div>
+      <div class="sidebar-brand">
+        <span>🌱</span> EcoShare Admin
+      </div>
+      <ul class="sidebar-menu">
+        <li><button class="sidebar-link active" data-section="dashboard-section">📊 Dashboard</button></li>
+        <li><button class="sidebar-link" data-section="users-section">👥 Manage Users & Roles</button></li>
+        <li><button class="sidebar-link" data-section="listings-section">📦 Content Moderation</button></li>
+      </ul>
+    </div>
+    <div style="border-top: 1px solid var(--adm-border); padding-top: 16px;">
+      <a href="home.html" class="sidebar-link" style="margin-bottom: 4px;">← Return to App</a>
+      <button id="admin-logout-btn" class="sidebar-link" style="color: var(--adm-danger);">🚪 Sign Out</button>
+    </div>
+  </aside>
+
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <h1 id="section-title">Dashboard Overview</h1>
+      <span id="admin-user-email" style="background: #ffffff; border: 1px solid var(--adm-border); padding: 6px 12px; border-radius: 20px; color: var(--adm-muted); font-size: 0.8rem; font-weight: 500;">Authenticating...</span>
+    </div>
+
+    <div id="dashboard-section" class="admin-workspace-pane">
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <h4>Total Registered Users</h4>
+          <p class="stat" id="stat-users-count">—</p>
+        </div>
+        <div class="metric-card">
+          <h4>Active Marketplace Items</h4>
+          <p class="stat" id="stat-items-count">—</p>
+        </div>
+        <div class="metric-card">
+          <h4>Active Administrators</h4>
+          <p class="stat" id="stat-admins-count">—</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="users-section" class="admin-workspace-pane" style="display: none;">
+      <div class="admin-panel-card">
+        <div class="panel-header-flex">
+          <div>
+            <h3 style="margin: 0 0 4px 0; font-size: 1.1rem;">User Access & Role Management</h3>
+            <p style="margin: 0; color: var(--adm-muted); font-size: 0.85rem;">Search accounts and grant or revoke admin permissions.</p>
+          </div>
+          <input type="text" id="user-search-input" class="admin-search-input" placeholder="Search by name or email..." />
+        </div>
+        <div id="admin-users-target">Loading users...</div>
+      </div>
+    </div>
+
+    <div id="listings-section" class="admin-workspace-pane" style="display: none;">
+      <div class="admin-panel-card">
+        <div class="panel-header-flex">
+          <div>
+            <h3 style="margin: 0 0 4px 0; font-size: 1.1rem;">Marketplace Moderation</h3>
+            <p style="margin: 0; color: var(--adm-muted); font-size: 0.85rem;">Inspect and remove inappropriate or expired community postings.</p>
+          </div>
+          <input type="text" id="listing-search-input" class="admin-search-input" placeholder="Search listings..." />
+        </div>
+        <div id="admin-listings-target">Loading items...</div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Admin Edit Item Modal (Content Moderation) -->
+  <div id="listing-edit-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; padding: 16px;">
+    <div style="background: #ffffff; width: 100%; max-width: 480px; border-radius: 12px; padding: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); color: #111;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+        <h3 style="margin: 0; font-size: 18px;">Edit Listing</h3>
+        <button id="listing-edit-close" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #6b7280;">&times;</button>
+      </div>
+      <form id="listing-edit-form" style="display: flex; flex-direction: column; gap: 12px;">
+        <input type="hidden" id="listing-edit-id" />
+        <div>
+          <label style="display:block; font-size: 13px; font-weight: 600; margin-bottom: 4px;">Item Title</label>
+          <input type="text" id="listing-edit-title" required style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; box-sizing: border-box;" />
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div>
+            <label style="display:block; font-size: 13px; font-weight: 600; margin-bottom: 4px;">Building / Location</label>
+            <input type="text" id="listing-edit-building" required style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; box-sizing: border-box;" />
+          </div>
+          <div>
+            <label style="display:block; font-size: 13px; font-weight: 600; margin-bottom: 4px;">Total Quantity</label>
+            <input type="number" id="listing-edit-quantity" min="1" step="1" required style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; box-sizing: border-box;" />
+          </div>
+        </div>
+        <div>
+          <label style="display:block; font-size: 13px; font-weight: 600; margin-bottom: 4px;">Status</label>
+          <select id="listing-edit-status" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff; box-sizing: border-box;">
+            <option value="available">Available</option>
+            <option value="claimed">Claimed</option>
+          </select>
+          <p style="margin: 6px 0 0 0; font-size: 12px; color: #6b7280;">Switching Claimed → Available fully restores quantity and restarts the posting timer.</p>
+        </div>
+        <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px;">
+          <button type="button" id="listing-edit-cancel" class="btn-action btn-outline-action" style="padding: 10px 16px;">Cancel</button>
+          <button type="submit" class="btn-action btn-primary-action" style="padding: 10px 16px;">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+<script type="module">
+  import { guardAdminPage, logOut } from "./js/auth.js";
+  import { db } from "./js/firebase-config.js";
+  import { collection, getDocs, getDoc, setDoc, updateDoc, deleteDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { buildUnclaimUpdate, buildForceClaimUpdate, resolveQuantityTotal } from "./js/item-status.js";
+
+  // Permanent Admin Lock: the primary admin account is the root of trust
+  // every other admin grant ultimately depends on, so it can be promoted
+  // but never revoked from this console. Any other admin can still be
+  // demoted normally.
+  const PURGE_RESTRICTED_EMAIL = "shadow@ecoshare.com";
+  let currentAdminEmail = null;
+
+  let cachedUsers = [];
+  let cachedListings = [];
+
+  document.addEventListener("DOMContentLoaded", () => {
+    guardAdminPage((user) => {
+      document.getElementById("admin-user-email").textContent = user.email;
+      currentAdminEmail = (user.email || "").toLowerCase();
+      loadAllAdminData();
+    });
+
+    document.getElementById("admin-logout-btn").addEventListener("click", async () => {
+      await logOut();
+      window.location.href = "login.html";
+    });
+
+    const menuButtons = document.querySelectorAll(".sidebar-link[data-section]");
+    menuButtons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        menuButtons.forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+
+        const targetId = btn.getAttribute("data-section");
+        document.querySelectorAll(".admin-workspace-pane").forEach(pane => {
+          pane.style.display = pane.id === targetId ? "block" : "none";
+        });
+
+        const titles = {
+          "dashboard-section": "Dashboard Overview",
+          "users-section": "Manage Users & Roles",
+          "listings-section": "Content Moderation"
+        };
+        document.getElementById("section-title").textContent = titles[targetId];
+      });
+    });
+
+    document.getElementById("user-search-input").addEventListener("input", (e) => {
+      renderUsersTable(e.target.value);
+    });
+    document.getElementById("listing-search-input").addEventListener("input", (e) => {
+      renderListingsTable(e.target.value);
+    });
+
+    // Admin Dashboard Override: edit-listing modal wiring (title, building,
+    // quantity, status — including Claimed -> Unclaimed with timer reset).
+    const editModal = document.getElementById("listing-edit-modal");
+    const closeListingEditModal = () => { if (editModal) editModal.style.display = "none"; };
+    document.getElementById("listing-edit-close")?.addEventListener("click", closeListingEditModal);
+    document.getElementById("listing-edit-cancel")?.addEventListener("click", closeListingEditModal);
+    if (editModal) {
+      editModal.addEventListener("click", (e) => { if (e.target === editModal) closeListingEditModal(); });
+    }
+
+    const listingEditForm = document.getElementById("listing-edit-form");
+    if (listingEditForm) {
+      listingEditForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const itemId = document.getElementById("listing-edit-id").value;
+        const title = document.getElementById("listing-edit-title").value;
+        const building = document.getElementById("listing-edit-building").value;
+        const quantityTotal = Math.max(1, Math.round(parseFloat(document.getElementById("listing-edit-quantity").value)));
+        const newStatus = document.getElementById("listing-edit-status").value;
+
+        const existing = cachedListings.find((i) => i.id === itemId);
+        const oldStatus = existing ? (existing.status || "available") : "available";
+
+        try {
+          let payload = { title, building, quantityTotal, updatedAt: serverTimestamp() };
+
+          if (newStatus === "available" && oldStatus === "claimed") {
+            payload = { ...payload, ...buildUnclaimUpdate({ ...existing, quantityTotal }) };
+          } else if (newStatus === "claimed" && oldStatus !== "claimed") {
+            payload = { ...payload, ...buildForceClaimUpdate(existing || {}) };
+          } else {
+            payload.status = newStatus;
+            if (existing) {
+              const oldAvailable = typeof existing.quantityAvailable === "number"
+                ? existing.quantityAvailable
+                : (oldStatus === "available" ? resolveQuantityTotal(existing) : 0);
+              payload.quantityAvailable = Math.max(0, Math.min(oldAvailable, quantityTotal));
+            }
+          }
+
+          await updateDoc(doc(db, "items", itemId), payload);
+          closeListingEditModal();
+          await fetchListings();
+        } catch (err) {
+          alert("Failed to update listing.");
+        }
+      });
+    }
+  });
+
+  async function loadAllAdminData() {
+    await Promise.all([fetchUsers(), fetchListings()]);
+  }
+
+  async function fetchUsers() {
+    try {
+      const snap = await getDocs(collection(db, "users"));
+      cachedUsers = [];
+      let adminCount = 0;
+
+      for (const dSnap of snap.docs) {
+        const data = dSnap.data();
+        const uid = dSnap.id;
+        const adminCheck = await getDoc(doc(db, "admins", uid));
+        const isAdmin = adminCheck.exists();
+        if (isAdmin) adminCount++;
+
+        cachedUsers.push({ uid, ...data, isAdmin });
+      }
+
+      document.getElementById("stat-users-count").textContent = cachedUsers.length;
+      document.getElementById("stat-admins-count").textContent = adminCount;
+      renderUsersTable();
+    } catch (err) {
+      document.getElementById("admin-users-target").innerHTML = "<p style='color:var(--adm-danger);'>Failed to load users.</p>";
+    }
+  }
+
+  async function fetchListings() {
+    try {
+      const snap = await getDocs(collection(db, "items"));
+      cachedListings = [];
+      snap.forEach(dSnap => {
+        cachedListings.push({ id: dSnap.id, ...dSnap.data() });
+      });
+
+      document.getElementById("stat-items-count").textContent = cachedListings.length;
+      renderListingsTable();
+    } catch (err) {
+      document.getElementById("admin-listings-target").innerHTML = "<p style='color:var(--adm-danger);'>Failed to load items.</p>";
+    }
+  }
+
+  function renderUsersTable(filter = "") {
+    const container = document.getElementById("admin-users-target");
+    const query = filter.toLowerCase();
+    const filtered = cachedUsers.filter(u => 
+      (u.name && u.name.toLowerCase().includes(query)) || 
+      (u.email && u.email.toLowerCase().includes(query))
+    );
+
+    if (filtered.length === 0) {
+      container.innerHTML = "<p style='color:var(--adm-muted); padding: 12px 0; font-size:0.9rem;'>No matching users found.</p>";
+      return;
+    }
+
+    let html = `
+      <div class="admin-table-wrapper">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Building</th>
+              <th>Role</th>
+              <th style="text-align: right;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    filtered.forEach(u => {
+      const isPermanentAdmin = (u.email || "").toLowerCase() === PURGE_RESTRICTED_EMAIL;
+      html += `
+        <tr>
+          <td><strong style="font-weight: 600;">${escapeHtml(u.name || 'Unnamed')}</strong></td>
+          <td style="color: var(--adm-muted);">${escapeHtml(u.email || '')}</td>
+          <td>${escapeHtml(u.building || 'General')}</td>
+          <td>${u.isAdmin || isPermanentAdmin ? '<span class="badge badge-admin">Admin</span>' : '<span class="badge badge-member">Member</span>'}</td>
+          <td style="text-align: right;">
+            ${isPermanentAdmin
+              ? `<span style="color: #166534; font-weight: 600; font-size: 0.85rem; background: #dcfce7; padding: 4px 8px; border-radius: 4px; display: inline-block;">🔒 Permanent Admin</span>`
+              : (u.isAdmin
+                  ? `<button class="btn-action btn-danger role-btn" data-uid="${u.uid}" data-action="demote">Revoke Admin</button>`
+                  : `<button class="btn-action role-btn" data-uid="${u.uid}" data-action="promote">Make Admin</button>`
+                )
+            }
+          </td>
+        </tr>`;
+    });
+
+    html += `</tbody></table></div>`;
+    container.innerHTML = html;
+
+    container.querySelectorAll(".role-btn").forEach(btn => {
+      btn.addEventListener("click", async (e) => {
+        const uid = e.target.getAttribute("data-uid");
+        const action = e.target.getAttribute("data-action");
+        const userObj = cachedUsers.find(x => x.uid === uid);
+        if (action === "demote" && (userObj?.email || "").toLowerCase() === PURGE_RESTRICTED_EMAIL) {
+          alert("Action denied: the permanent administrator cannot be revoked.");
+          return;
+        }
+        try {
+          if (action === "promote") {
+            await setDoc(doc(db, "admins", uid), { email: userObj?.email || "", updatedAt: serverTimestamp() });
+          } else {
+            await deleteDoc(doc(db, "admins", uid));
+          }
+          await fetchUsers();
+        } catch (err) {
+          alert("Permission modification failed.");
+        }
+      });
+    });
+  }
+
+  function renderListingsTable(filter = "") {
+    const container = document.getElementById("admin-listings-target");
+    const query = filter.toLowerCase();
+    const filtered = cachedListings.filter(item => 
+      (item.title && item.title.toLowerCase().includes(query)) ||
+      (item.building && item.building.toLowerCase().includes(query))
+    );
+
+    if (filtered.length === 0) {
+      container.innerHTML = "<p style='color:var(--adm-muted); padding: 12px 0; font-size:0.9rem;'>No matching listings found.</p>";
+      return;
+    }
+
+    let html = `
+      <div class="admin-table-wrapper">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Item Title</th>
+              <th>Building</th>
+              <th>Status</th>
+              <th style="text-align: right;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    filtered.forEach(item => {
+      const isClaimed = item.status === 'claimed';
+      html += `
+        <tr>
+          <td><strong style="font-weight: 600;">${escapeHtml(item.title || 'Untitled')}</strong></td>
+          <td>${escapeHtml(item.building || 'General')}</td>
+          <td><span style="text-transform: capitalize;">${escapeHtml(item.status || 'available')}</span></td>
+          <td style="text-align: right;">
+            <button class="btn-action btn-outline-action toggle-listing-status-btn" data-id="${item.id}" data-status="${isClaimed ? 'available' : 'claimed'}">
+              Make ${isClaimed ? 'Unclaimed' : 'Claimed'}
+            </button>
+            <button class="btn-action btn-outline-action edit-listing-btn" data-id="${item.id}">Edit</button>
+            <button class="btn-action btn-danger delete-btn" data-id="${item.id}">
+              Purge Item
+            </button>
+          </td>
+        </tr>`;
+    });
+
+    html += `</tbody></table></div>`;
+    container.innerHTML = html;
+
+    // Admin Dashboard Override: quick Claimed <-> Unclaimed toggle, with the
+    // same quantity-restore + timer-reset behavior as the poster's control.
+    container.querySelectorAll(".toggle-listing-status-btn").forEach(btn => {
+      btn.addEventListener("click", async (e) => {
+        const id = e.target.getAttribute("data-id");
+        const newStatus = e.target.getAttribute("data-status");
+        const item = cachedListings.find(i => i.id === id);
+        try {
+          const payload = newStatus === "available"
+            ? buildUnclaimUpdate(item || {})
+            : buildForceClaimUpdate(item || {});
+          await updateDoc(doc(db, "items", id), payload);
+          await fetchListings();
+        } catch (err) {
+          alert("Failed to toggle listing status.");
+        }
+      });
+    });
+
+    container.querySelectorAll(".edit-listing-btn").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        const id = e.target.getAttribute("data-id");
+        const item = cachedListings.find(i => i.id === id);
+        if (!item) return;
+        document.getElementById("listing-edit-id").value = item.id;
+        document.getElementById("listing-edit-title").value = item.title || "";
+        document.getElementById("listing-edit-building").value = item.building || "";
+        document.getElementById("listing-edit-quantity").value = resolveQuantityTotal(item);
+        document.getElementById("listing-edit-status").value = item.status || "available";
+        const modal = document.getElementById("listing-edit-modal");
+        if (modal) modal.style.display = "flex";
+      });
+    });
+
+    {
+      container.querySelectorAll(".delete-btn").forEach(btn => {
+        btn.addEventListener("click", async (e) => {
+          const id = e.target.getAttribute("data-id");
+          if (confirm("Are you sure you want to permanently delete this listing?")) {
+            try {
+              await deleteDoc(doc(db, "items", id));
+              await fetchListings();
+            } catch (err) {
+              alert("Failed to delete item.");
+            }
+          }
+        });
+      });
+    }
+  }
+
+  function escapeHtml(str) {
+    if (!str) return "";
+    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+</script>
+</body>
+</html>

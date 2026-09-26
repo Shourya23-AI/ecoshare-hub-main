@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>EcoShare Hub — Browse Listings</title>
+<link rel="stylesheet" href="css/style.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* Animated gradient background moving towards impact */
+  @keyframes moveGradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  .animated-hero {
+    background: linear-gradient(135deg, #f0fdf4, #dfffea, #f0fdf4, #e8f5e9);
+    background-size: 300% 300%;
+    animation: moveGradient 12s ease infinite;
+  }
+
+  /* Enhanced stat cards hover & layout styling */
+  .stat-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    padding: 22px 20px;
+    border-radius: 14px;
+    text-align: center;
+    border: 1px solid rgba(229, 231, 235, 0.8);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  .stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(22, 101, 52, 0.08);
+    border-color: #bbf7d0;
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="home.html" class="brand"><span class="brand-mark">E</span> EcoShare Hub</a>
+    
+    <!-- Admin Quick-Return Button (Hidden by default, shown via JS if user is admin) -->
+    <div id="admin-shortcut-container" style="display: none; margin-left: 15px;">
+      <a href="admin.html" style="background: #15803d; color: #ffffff; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 0.8rem; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        ⚡ Admin Dashboard
+      </a>
+    </div>
+
+    <div class="nav-links" style="margin-left: 20px;">
+      <a href="home.html" class="nav-link active">Browse</a>
+      <a href="impact.html" class="nav-link">My Impact</a>
+      <a href="leaderboard.html" class="nav-link">Leaderboard</a>
+      <a href="chat.html" class="nav-link">Messages</a>
+    </div>
+    
+    <div class="nav-actions" style="display: flex; align-items: center; gap: 8px;">
+      <span id="nav-tier-pill" class="badge badge-gold" style="display:none;"></span>
+      <div id="nav-profile-slot" style="display:none;"></div>
+      <button id="nav-post-btn" class="btn btn-primary btn-sm">+ Post item</button>
+      <button id="logout-btn" class="btn btn-outline btn-sm" style="display:none;">Log out</button>
+    </div>
+  </div>
+</nav>
+
+<header class="container hero animated-hero" style="padding: 60px 40px; border-radius: 0 0 20px 20px; margin-bottom: 30px;">
+  <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 50px; align-items: center;">
+    <div style="padding-left: 10px;">
+      <span class="eyebrow" style="letter-spacing: 1px; font-weight: 700; color: #15803d; font-size: 12px;">COMMUNITY RESOURCE SHARING</span>
+      <h1 style="font-family: 'Inter', sans-serif; font-size: 46px; font-weight: 800; line-height: 1.1; color: #0f172a; margin: 12px 0 18px 0;">
+        Share More.<br><span style="color: #166534; font-style: normal; font-weight: 800; letter-spacing: -0.5px;">Waste Less.</span>
+      </h1>
+      <p style="color: #475569; line-height: 1.6; margin-bottom: 28px; font-size: 16px; font-weight: 400; max-width: 500px;">
+        Post items you no longer need — food, furniture, books, electronics — and let your neighbors claim them. Top helpers earn certificates and priority access.
+      </p>
+      <div style="display: flex; gap: 12px;">
+        <button id="hero-post-btn" class="btn btn-primary" style="padding: 12px 24px; font-weight: 600;">Post an item</button>
+        <a href="impact.html" class="btn btn-outline" style="padding: 12px 24px; font-weight: 600;">View my impact</a>
+      </div>
+    </div>
+
+    <!-- Live Database Stats Grid with Cache Support -->
+    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; align-self: center;">
+      <div class="stat-card">
+        <h3 id="stat-items-shared" style="font-size: 30px; font-weight: 800; color: #166534; margin: 0 0 4px 0;">--</h3>
+        <p style="font-size: 13px; font-weight: 500; color: #64748b; margin: 0;">Items shared</p>
+      </div>
+      
+      <div class="stat-card">
+        <h3 id="stat-waste-diverted" style="font-size: 30px; font-weight: 800; color: #166534; margin: 0 0 4px 0;">--</h3>
+        <p style="font-size: 13px; font-weight: 500; color: #64748b; margin: 0;">Waste diverted</p>
+      </div>
+
+      <div class="stat-card">
+        <h3 id="stat-active-members" style="font-size: 30px; font-weight: 800; color: #166534; margin: 0 0 4px 0;">--</h3>
+        <p style="font-size: 13px; font-weight: 500; color: #64748b; margin: 0;">Active members</p>
+      </div>
+
+      <div class="stat-card">
+        <h3 id="stat-certificates" style="font-size: 30px; font-weight: 800; color: #166534; margin: 0 0 4px 0;">--</h3>
+        <p style="font-size: 13px; font-weight: 500; color: #64748b; margin: 0;">Certificates</p>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section class="container" style="padding-bottom: 80px;">
+  <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
+    <div>
+      <h2 style="font-size: 24px; font-weight: 700; color: #111827; margin: 0 0 6px 0;">Browse listings</h2>
+      <p style="color: #4b5563; font-size: 13px; margin: 0;">Gold & Platinum helpers get a 60-minute priority window on all items.</p>
+    </div>
+    <!-- Search Bar Input for main.js filtering integration -->
+    <div>
+      <input type="text" id="search-input" placeholder="Search title or location..." style="padding: 8px 14px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 13px; width: 220px;" />
+    </div>
+  </div>
+
+  <!-- Category Filter Bar -->
+  <div style="display: flex; gap: 8px; margin-bottom: 24px; overflow-x: auto; padding-bottom: 4px;">
+    <button class="filter-chip" data-category="All" style="background: #166534; color: #fff; border: 1px solid #166534; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer;">All</button>
+    <button class="filter-chip" data-category="Food" style="background: #fff; color: #374151; border: 1px solid #e5e7eb; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer;">Food</button>
+    <button class="filter-chip" data-category="Furniture" style="background: #fff; color: #374151; border: 1px solid #e5e7eb; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer;">Furniture</button>
+    <button class="filter-chip" data-category="Electronics" style="background: #fff; color: #374151; border: 1px solid #e5e7eb; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer;">Electronics</button>
+    <button class="filter-chip" data-category="Books" style="background: #fff; color: #374151; border: 1px solid #e5e7eb; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer;">Books</button>
+    <button class="filter-chip" data-category="Clothing" style="background: #fff; color: #374151; border: 1px solid #e5e7eb; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer;">Clothing</button>
+    <button class="filter-chip" data-category="Plants" style="background: #fff; color: #374151; border: 1px solid #e5e7eb; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer;">Plants</button>
+    <button class="filter-chip" data-category="Misc" style="background: #fff; color: #374151; border: 1px solid #e5e7eb; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer;">Misc</button>
+  </div>
+
+  <!-- Item Grid (Fixed ID to match main.js) -->
+  <div id="item-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;">
+    <p style="color: #6b7280; font-size: 14px;">Loading available items...</p>
+  </div>
+</section>
+
+<!-- Post/Edit Item Modal Overlay -->
+<div id="post-modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; padding: 16px;">
+  <div style="background: #ffffff; width: 100%; max-width: 500px; border-radius: 12px; padding: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); position: relative;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h3 style="margin: 0; font-size: 20px; color: #111;">Post an item</h3>
+      <button id="post-modal-close" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #6b7280;">&times;</button>
+    </div>
+    
+    <form id="post-item-form" style="display: flex; flex-direction: column; gap: 12px;">
+      <div>
+        <label style="display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 4px;">Item Title</label>
+        <input type="text" name="title" required placeholder="e.g. Wooden Dining Chair" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; box-sizing: border-box;" />
+      </div>
+
+      <div>
+        <label style="display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 4px;">Photo (optional)</label>
+        <div style="display:flex; align-items:center; gap:12px; background:#f0fdf4; border:1px dashed #bbf7d0; border-radius:8px; padding:10px 12px;">
+          <img id="post-photo-preview" src="" alt="" style="display:none; width:52px; height:52px; object-fit:cover; border-radius:6px; flex-shrink:0;" />
+          <label class="btn btn-outline btn-sm" style="cursor:pointer; white-space:nowrap;">
+            Choose photo
+            <input type="file" id="post-photo-input" name="photo" accept="image/*" style="display:none;" />
+          </label>
+          <span id="post-photo-filename" style="font-size:12px; color:#6b7280;">No file selected — items with photos get claimed faster</span>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <div>
+          <label style="display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 4px;">Category</label>
+          <select name="category" required style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; background: #fff; box-sizing: border-box;">
+            <option value="Food">Food</option>
+            <option value="Furniture">Furniture</option>
+            <option value="Electronics">Electronics</option>
+            <option value="Books">Books</option>
+            <option value="Clothing">Clothing</option>
+            <option value="Plants">Plants</option>
+            <option value="Misc">Misc</option>
+          </select>
+        </div>
+        <div>
+          <label style="display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 4px;">Condition</label>
+          <select name="condition" required style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; background: #fff; box-sizing: border-box;">
+            <option value="">Select condition</option>
+            <option value="New">New</option>
+            <option value="Like New">Like New</option>
+            <option value="Good">Good</option>
+            <option value="Fair">Fair</option>
+            <option value="Needs Repair">Needs Repair</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <div>
+          <label style="display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 4px;">Quantity</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="number" name="quantityAmount" min="1" step="1" required placeholder="e.g. 3" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; box-sizing: border-box;" />
+            <select name="quantityUnit" required style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; background: #fff; box-sizing: border-box;">
+              <option value="units">units</option>
+              <option value="kg">kg</option>
+              <option value="g">g</option>
+              <option value="pieces">pieces</option>
+              <option value="packs">packs</option>
+              <option value="liters">liters</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label style="display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 4px;">Posting Limit</label>
+          <div id="posting-limit-note" style="width: 100%; padding: 10px; border: 1px dashed #d1d5db; border-radius: 6px; font-size: 13px; color: #6b7280; background: #f9fafb; box-sizing: border-box;">
+            Pick a category to see the limit
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <label style="display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 4px;">Pickup Location</label>
+        <input type="text" name="pickupLocation" required placeholder="e.g. Downtown / Building B" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; box-sizing: border-box;" />
+      </div>
+
+      <div>
+        <label style="display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 4px;">Description</label>
+        <textarea name="description" rows="3" placeholder="Provide details about the item..." style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; box-sizing: border-box; resize: vertical;"></textarea>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="margin-top: 8px;">Post listing</button>
+    </form>
+  </div>
+</div>
+
+<!-- Claim Item Confirmation Modal Overlay -->
+<div id="claim-modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; padding: 16px;">
+  <div style="background: #ffffff; width: 100%; max-width: 450px; border-radius: 12px; padding: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); position: relative;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h3 style="margin: 0; font-size: 20px; color: #111;">Claim this item</h3>
+      <button id="claim-modal-close" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #6b7280;">&times;</button>
+    </div>
+    
+    <p id="claim-item-details" style="font-size: 14px; color: #4b5563; margin-bottom: 12px;">
+      You are about to claim this item. Once confirmed, a direct chat will open with the owner to coordinate pickup.
+    </p>
+
+    <div id="claim-amount-container" style="margin-bottom: 20px;"></div>
+
+    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+      <button id="claim-cancel-btn" class="btn btn-outline" style="padding: 8px 16px;">Cancel</button>
+      <button id="claim-confirm-btn" class="btn btn-primary" style="padding: 8px 16px;">Confirm Claim</button>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">
+    <span class="brand"><span class="brand-mark">E</span> EcoShare Hub</span>
+    <span>© 2026 EcoShare Hub · Reducing waste, building community.</span>
+    <div class="footer-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Contact</a></div>
+  </div>
+</footer>
+
+<!-- Instant Caching Fallback Script -->
+<script>
+  (function() {
+    const cachedStats = sessionStorage.getItem('ecoshare_home_stats');
+    if (cachedStats) {
+      try {
+        const stats = JSON.parse(cachedStats);
+        document.getElementById('stat-items-shared').innerText = stats.items || '0';
+        document.getElementById('stat-waste-diverted').innerText = (stats.waste || '0') + ' kg';
+        document.getElementById('stat-active-members').innerText = stats.members || '0';
+        document.getElementById('stat-certificates').innerText = stats.certs || '0';
+      } catch (e) {}
+    }
+  })();
+</script>
+
+<!-- Add Admin Check script integration for home page -->
+<script type="module">
+  import { guardPage, isAdminUser } from "./js/auth.js";
+  
+  guardPage(async (user) => {
+    if (user) {
+      const adminCheck = await isAdminUser(user);
+      if (adminCheck) {
+        const shortcut = document.getElementById("admin-shortcut-container");
+        if (shortcut) shortcut.style.display = "block";
+      }
+    }
+  });
+</script>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

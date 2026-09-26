@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Messages — EcoShare Hub</title>
+<link rel="stylesheet" href="css/style.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="home.html" class="brand"><span class="brand-mark">E</span> EcoShare Hub</a>
+    <div class="nav-links">
+      <a href="home.html" class="nav-link">Browse</a>
+      <a href="impact.html" class="nav-link">My Impact</a>
+      <a href="leaderboard.html" class="nav-link">Leaderboard</a>
+      <a href="chat.html" class="nav-link active">Messages</a>
+    </div>
+    <div class="nav-actions">
+      <span id="nav-tier-pill" class="badge badge-gold" style="display:none;"></span>
+      <div id="nav-profile-slot" style="display:none;"></div>
+      <button id="nav-post-btn" class="btn btn-primary btn-sm">+ Post item</button>
+      <button id="logout-btn" class="btn btn-outline btn-sm" style="display:none;">Log out</button>
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="page-header">
+    <h1>Messages</h1>
+    <p style="color:var(--muted);font-size:13px;margin-top:6px;">Chat with whoever's on the other end of a claimed item — pickup time, exact spot, anything else they need to know. 🔒 Messages are end-to-end encrypted in this browser.</p>
+  </div>
+
+  <div class="chat-shell">
+    <aside class="chat-list-pane" id="chat-list">
+      <div class="empty-state">Loading conversations…</div>
+    </aside>
+    <section class="chat-thread-pane">
+      <div class="chat-thread-header" id="chat-thread-header">Select a conversation</div>
+      <div class="chat-messages" id="chat-messages">
+        <div class="empty-state">Chats open here once you or someone else claims an item and starts one from the item card.</div>
+      </div>
+      <form class="chat-input-row" id="chat-form" style="display:none;">
+        <input type="text" id="chat-input" placeholder="Type a message…" autocomplete="off" />
+        <button type="submit" class="btn btn-primary btn-sm">Send</button>
+      </form>
+    </section>
+  </div>
+</div>
+
+<!-- Post-item modal included so the nav button works from this page too -->
+<div class="modal-overlay" id="post-modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Post an item</h3>
+      <button class="modal-close" id="post-modal-close">✕</button>
+    </div>
+    <form id="post-item-form">
+      <div class="field">
+        <label>Item title</label>
+        <input name="title" type="text" placeholder="e.g. Wooden study desk" required />
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Category</label>
+          <select name="category" required>
+            <option value="">Select...</option>
+            <option>Food</option><option>Furniture</option><option>Electronics</option>
+            <option>Books</option><option>Clothing</option><option>Plants</option><option>Misc</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Condition</label>
+          <select name="condition" required>
+            <option value="">Select...</option>
+            <option value="New">New</option><option value="Like New">Like New</option><option value="Good">Good</option><option value="Fair">Fair</option><option value="Needs Repair">Needs Repair</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Quantity</label>
+          <div style="display: flex; gap: 8px;">
+            <input name="quantityAmount" type="number" min="1" step="1" required placeholder="e.g. 3" />
+            <select name="quantityUnit" required>
+              <option value="units">units</option>
+              <option value="kg">kg</option>
+              <option value="g">g</option>
+              <option value="pieces">pieces</option>
+              <option value="packs">packs</option>
+              <option value="liters">liters</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label>Posting limit</label>
+          <div id="posting-limit-note" style="padding: 10px; border: 1px dashed #d1d5db; border-radius: 6px; font-size: 13px; color: #6b7280; background: #f9fafb;">
+            Pick a category to see the limit
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Pickup location</label>
+        <input name="pickupLocation" type="text" placeholder="e.g. Block C, Floor 2" required />
+      </div>
+      <div class="field">
+        <label>Description</label>
+        <textarea name="description" placeholder="Condition details, allergens, dimensions, pickup notes..."></textarea>
+      </div>
+      <div class="upload-row">
+        <img id="post-photo-preview" src="" alt="" style="display:none; width:40px; height:40px; object-fit:cover; border-radius:6px;" />
+        <span id="post-photo-filename">📷 Add a photo — items with photos are claimed 3x faster</span>
+        <label class="btn btn-outline btn-sm" style="cursor:pointer;">
+          Upload
+          <input type="file" id="post-photo-input" name="photo" accept="image/*" style="display:none;" />
+        </label>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Post listing</button>
+    </form>
+  </div>
+</div>
+
+<script type="module">
+  import { guardPage } from "./js/auth.js";
+  guardPage();
+</script>
+<script type="module" src="js/main.js"></script>
+
+<script type="module">
+  import { auth } from "./js/firebase-config.js";
+  import { listenMessages, listenMyChats, sendMessage, getChat, otherParticipant, decryptMessage } from "./js/chat.js";
+  import { decryptFromUser } from "./js/e2ee.js";
+
+  const listEl = document.getElementById("chat-list");
+  const headerEl = document.getElementById("chat-thread-header");
+  const messagesEl = document.getElementById("chat-messages");
+  const formEl = document.getElementById("chat-form");
+  const inputEl = document.getElementById("chat-input");
+
+  const params = new URLSearchParams(window.location.search);
+  let activeChatId = params.get("id") || null;
+  let activeOtherUid = null;
+  let unsubMessages = null;
+
+  function otherPartyName(chat, uid) {
+    const names = chat.participantNames || {};
+    const otherUid = otherParticipant(chat, uid);
+    return names[otherUid] || "Neighbor";
+  }
+
+  async function renderList(chats, uid) {
+    if (!chats.length) {
+      listEl.innerHTML = `<div class="empty-state">No conversations yet.</div>`;
+      return;
+    }
+
+    // Decrypt each thread's last-message preview in parallel. If a preview
+    // can't be decrypted yet (other side hasn't published a key, or it's a
+    // brand-new/legacy row), fall back to a safe placeholder rather than
+    // failing the whole list.
+    const rows = await Promise.all(chats.map(async (c) => {
+      const otherUid = otherParticipant(c, uid);
+      let preview = "Say hello 👋";
+      if (c.lastMessageCipher && c.lastMessageIv) {
+        try {
+          preview = await decryptFromUser(otherUid, c.lastMessageCipher, c.lastMessageIv);
+        } catch (e) {
+          preview = "🔒 Encrypted message";
+        }
+      } else if (c.lastMessage) {
+        preview = c.lastMessage; // legacy pre-encryption thread
+      }
+      return `
+        <a class="chat-list-item ${c.id === activeChatId ? "active" : ""}" href="chat.html?id=${encodeURIComponent(c.id)}">
+          <div class="chat-list-name">${otherPartyName(c, uid)}</div>
+          <div class="chat-list-item-title">${c.itemTitle || ""}</div>
+          <div class="chat-list-preview">${(preview || "").replace(/</g, "&lt;")}</div>
+        </a>`;
+    }));
+    listEl.innerHTML = rows.join("");
+  }
+
+  async function renderMessages(msgs, uid, otherUid) {
+    if (!msgs.length) {
+      messagesEl.innerHTML = `<div class="empty-state">No messages yet — say hello 👋</div>`;
+      return;
+    }
+    const rows = await Promise.all(msgs.map(async (m) => {
+      const text = await decryptMessage(m, otherUid);
+      return `
+        <div class="chat-bubble-row ${m.senderId === uid ? "mine" : ""}">
+          <div class="chat-bubble">${(text || "").replace(/</g, "&lt;")}</div>
+        </div>`;
+    }));
+    messagesEl.innerHTML = rows.join("");
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  async function openChat(chatId, uid) {
+    activeChatId = chatId;
+    if (unsubMessages) unsubMessages();
+    formEl.style.display = "none";
+    headerEl.textContent = "Loading…";
+
+    const chat = await getChat(chatId);
+    if (!chat || !(chat.participants || []).includes(uid)) {
+      headerEl.textContent = "Conversation not found";
+      messagesEl.innerHTML = `<div class="empty-state">This conversation doesn't exist or isn't yours.</div>`;
+      return;
+    }
+
+    activeOtherUid = otherParticipant(chat, uid);
+    headerEl.textContent = `🔒 ${otherPartyName(chat, uid)} · ${chat.itemTitle || ""}`;
+    formEl.style.display = "flex";
+    unsubMessages = listenMessages(chatId, (msgs) => renderMessages(msgs, uid, activeOtherUid));
+  }
+
+  auth.onAuthStateChanged((user) => {
+    if (!user) return; // guardPage() handles the redirect
+    listenMyChats((chats) => renderList(chats, user.uid));
+    if (activeChatId) openChat(activeChatId, user.uid);
+
+    formEl.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (!activeChatId) return;
+      const text = inputEl.value;
+      inputEl.value = "";
+      try {
+        await sendMessage(activeChatId, text, activeOtherUid);
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+  });
+</script>
+</body>
+</html>
